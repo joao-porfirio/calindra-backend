@@ -1,8 +1,10 @@
 const express = require('express');
 const app = express();
 const axios = require('axios');
+const cors = require('cors');
 
 const PORT = process.env.PORT || 8877;
+app.use(cors());
 
 app.get('/', (request, response) => {
 	return response.send(
@@ -114,7 +116,7 @@ app.get('/partidoEspecifico/:id/politicos', (request, response) => {
 app.get('/queimadas', (request, response) => {
 	(async () => {
 		try {
-			const resposta = await axios.get(`https://queimadas.dgi.inpe.br/home/download?id=focos_brasil&time=48h&outputFormat=json&utm_source=landing-page&utm_medium=landing-page&utm_campaign=dados-abertos&utm_content=focos_brasil_24h`)
+			const resposta = await axios.get(`https://queimadas.dgi.inpe.br/home/download?id=focos_brasil&time=48h&outputFormat=json&utm_source=landing-page&utm_medium=landing-page&utm_campaign=dados-abertos&utm_content=focos_brasil_48h`)
 			return response.send(resposta.data);
 		} catch (error) {
 			console.log(error);
