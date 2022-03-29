@@ -50,7 +50,7 @@ app.get('/deputados', (request, response) => {
 app.get('/deputados/:id', (request, response) => {
 	(async () => {
 		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}?pagina=1&itens=1000`)
+			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}`)
 			return response.send(resposta.data);
 		} catch (error) {
 			console.log(error);
