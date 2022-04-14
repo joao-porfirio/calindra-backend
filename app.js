@@ -58,6 +58,30 @@ app.get('/deputados/:id', (request, response) => {
 	})();
 });
 
+app.get('/deputados/:id/gastosDeputado', (request, response) => {
+	(async () => {
+		try {
+			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}/despesas?pagina=1&itens=2000`)
+			const json = resposta.data;
+			const jsonFinal = [];
+
+			for(let i=0; i<json.dados.length; i++){
+				jsonFinal.push(
+					{
+						valor: json.dados[i].valorDocumento, 
+						tipoDespesa: json.dados[i].tipoDespesa,
+						ano: json.dados[i].ano,
+						mes: json.dados[i].mes,
+					}
+				);
+			}
+			return response.send(jsonFinal);
+		} catch (error) {
+			console.log(error);
+		}
+	})();
+});
+
 app.get('/deputados/:id/:info', (request, response) => {
 	(async () => {
 		try {
