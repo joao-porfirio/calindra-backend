@@ -82,10 +82,10 @@ app.get('/deputados/:id/gastosDeputado', (request, response) => {
 	})();
 });
 
-app.get('/deputados/:id/:info', (request, response) => {
+app.get('/deputados/:id/profissoes', (request, response) => {
 	(async () => {
 		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}/${request.params.info}?pagina=1&itens=2000`)
+			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}/profissoes`)
 			return response.send(resposta.data);
 		} catch (error) {
 			console.log(error);
