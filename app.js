@@ -15,7 +15,7 @@ app.get('/', (request, response) => {
 		"<ul>" +
 		"<li>" + "/deputados" + "</li>" + "<br>" +
 		"<li>" + "/deputados/idDeputado" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/despesas" + "</li>" + "<br>" +
+		"<li>" + "/deputados/idDeputado/gastosDeputado" + "</li>" + "<br>" +
 		"<li>" + "/deputados/idDeputado/discursos" + "</li>" + "<br>" +
 		"<li>" + "/deputados/idDeputado/eventos" + "</li>" + "<br>" +
 		"<li>" + "/deputados/idDeputado/frentes" + "</li>" + "<br>" +
@@ -76,6 +76,131 @@ app.get('/deputados/:id/gastosDeputado', (request, response) => {
 				);
 			}
 			return response.send(jsonFinal);
+		} catch (error) {
+			console.log(error);
+		}
+	})();
+});
+
+app.get('/deputados/:id/gastosPorMes/:ano', (request, response) => {
+	function getSum(total, num) {
+		return total + Math.round(num);
+	  }
+	  
+	(async () => {
+		try {
+			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}/despesas?pagina=1&itens=2000`)
+			const json = resposta.data;
+
+			const valoresJaneiro = []; let valorFinalJan = 0;
+			const valoresFevereiro = []; let valorFinalFev= 0;
+			const valoresMarco = []; let valorFinalMar= 0;
+			const valoresAbril = []; let valorFinalAbr= 0; 
+			const valoresMaio = []; let valorFinalMai= 0; 
+			const valoresJunho = []; let valorFinalJun= 0; 
+			const valoresJulho = []; let valorFinalJul= 0;
+			const valoresAgosto = []; let valorFinalAgo= 0;
+			const valoresSetembro = []; let valorFinalSet= 0;
+			const valoresOutubro = []; let valorFinalOut= 0;
+			const valoresNovembro = []; let valorFinalNov= 0;
+			const valoresDezembro = []; let valorFinalDez= 0;
+			
+			for(let i=0; i<json.dados.length; i++){
+				if(json.dados[i].ano == `${request.params.ano}`){
+					switch (json.dados[i].mes) {
+						case 1:
+							valoresJaneiro.push(json.dados[i].valorDocumento)
+						break;
+						case 2:
+							valoresFevereiro.push(json.dados[i].valorDocumento)
+						break;
+						case 3:
+							valoresMarco.push(json.dados[i].valorDocumento)
+						break;
+						case 4:
+							valoresAbril.push(json.dados[i].valorDocumento)
+						break;
+						case 5:
+							valoresMaio.push(json.dados[i].valorDocumento)
+						break;
+						case 6:
+							valoresJunho.push(json.dados[i].valorDocumento)
+						break;
+						case 7:
+							valoresJulho.push(json.dados[i].valorDocumento)
+						break;
+						case 8:
+							valoresAgosto.push(json.dados[i].valorDocumento)
+						break;
+						case 9:
+							valoresSetembro.push(json.dados[i].valorDocumento)
+						break;
+						case 10:
+							valoresOutubro.push(json.dados[i].valorDocumento)
+						break;
+						case 11:
+							valoresNovembro.push(json.dados[i].valorDocumento)
+						break;
+						case 12:
+							valoresDezembro.push(json.dados[i].valorDocumento)
+						break;
+					}
+				}
+			}
+			
+			for (var x=0; x < valoresJaneiro.length; x++) {
+				valorFinalJan += parseFloat(valoresJaneiro[x]);
+			}
+			for (var x=0; x < valoresFevereiro.length; x++) {
+				valorFinalFev += parseFloat(valoresFevereiro[x]);
+			}
+			for (var x=0; x < valoresMarco.length; x++) {
+				valorFinalMar += parseFloat(valoresMarco[x]);
+			}
+			for (var x=0; x < valoresAbril.length; x++) {
+				valorFinalAbr += parseFloat(valoresAbril[x]);
+			}
+			for (var x=0; x < valoresMaio.length; x++) {
+				valorFinalMai += parseFloat(valoresMaio[x]);
+			}
+			for (var x=0; x < valoresJunho.length; x++) {
+				valorFinalJun += parseFloat(valoresJunho[x]);
+			}
+			for (var x=0; x < valoresJulho.length; x++) {
+				valorFinalJul += parseFloat(valoresJulho[x]);
+			}
+			for (var x=0; x < valoresAgosto.length; x++) {
+				valorFinalAgo += parseFloat(valoresAgosto[x]);
+			}
+			for (var x=0; x < valoresSetembro.length; x++) {
+				valorFinalSet += parseFloat(valoresSetembro[x]);
+			}
+			for (var x=0; x < valoresOutubro.length; x++) {
+				valorFinalOut += parseFloat(valoresOutubro[x]);
+			}
+			for (var x=0; x < valoresNovembro.length; x++) {
+				valorFinalNov += parseFloat(valoresNovembro[x]);
+			}
+			for (var x=0; x < valoresDezembro.length; x++) {
+				valorFinalDez += parseFloat(valoresDezembro[x]);
+			}
+
+			return response.send(
+				{
+					"janeiro": valorFinalJan,
+					"fevereiro": valorFinalFev,
+					"marco": valorFinalMar,
+					"abril": valorFinalAbr,
+					"maio": valorFinalMai,
+					"junho": valorFinalJun,
+					"julho": valorFinalJul,
+					"agosto": valorFinalAgo,
+					"setembro": valorFinalSet,
+					"outubro": valorFinalOut,
+					"novembro": valorFinalNov,
+					"dezembro": valorFinalDez
+				}
+				);
 		} catch (error) {
 			console.log(error);
 		}
