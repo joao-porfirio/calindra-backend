@@ -15,7 +15,8 @@ app.get('/', (request, response) => {
 		"<ul>" +
 		"<li>" + "/deputados" + "</li>" + "<br>" +
 		"<li>" + "/deputados/idDeputado" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/gastosDeputado" + "</li>" + "<br>" +
+		"<li>" + "/deputados/idDeputado/gastosDetalhados/ano" + "</li>" + "<br>" +
+		"<li>" + "/deputados/idDeputado/gastosPorMes/ano" + "</li>" + "<br>" +
 		"<li>" + "/deputados/idDeputado/discursos" + "</li>" + "<br>" +
 		"<li>" + "/deputados/idDeputado/eventos" + "</li>" + "<br>" +
 		"<li>" + "/deputados/idDeputado/frentes" + "</li>" + "<br>" +
@@ -58,7 +59,7 @@ app.get('/deputados/:id', (request, response) => {
 	})();
 });
 
-app.get('/deputados/:id/gastosDeputado', (request, response) => {
+app.get('/deputados/:id/gastosDetalhados/:ano', (request, response) => {
 	(async () => {
 		try {
 			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}/despesas?pagina=1&itens=2000`)
@@ -66,14 +67,16 @@ app.get('/deputados/:id/gastosDeputado', (request, response) => {
 			const jsonFinal = [];
 
 			for(let i=0; i<json.dados.length; i++){
-				jsonFinal.push(
-					{
-						valor: json.dados[i].valorDocumento, 
-						tipoDespesa: json.dados[i].tipoDespesa,
-						ano: json.dados[i].ano,
-						mes: json.dados[i].mes,
-					}
-				);
+				if(json.dados[i].ano == `${request.params.ano}`){
+					jsonFinal.push(
+						{
+							valor: json.dados[i].valorDocumento, 
+							tipoDespesa: json.dados[i].tipoDespesa,
+							ano: json.dados[i].ano,
+							mes: json.dados[i].mes,
+						}
+					);
+				}
 			}
 			return response.send(jsonFinal);
 		} catch (error) {
