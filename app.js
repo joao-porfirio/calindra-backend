@@ -83,9 +83,9 @@ app.get('/deputados/:id/gastosDeputado', (request, response) => {
 });
 
 app.get('/deputados/:id/gastosPorMes/:ano', (request, response) => {
-	function getSum(total, num) {
-		return total + Math.round(num);
-	  }
+	function formatarMoeda(valor){
+		return valor.toLocaleString('pt-br', {minimumFractionDigits: 2})
+	}
 	  
 	(async () => {
 		try {
@@ -185,20 +185,28 @@ app.get('/deputados/:id/gastosPorMes/:ano', (request, response) => {
 				valorFinalDez += parseFloat(valoresDezembro[x]);
 			}
 
+			let valorTotalAno = valorFinalJan+valorFinalFev+
+			valorFinalMar+valorFinalAbr+
+			valorFinalMai+valorFinalJun+
+			valorFinalJul+valorFinalAgo+
+			valorFinalSet+valorFinalOut+
+			valorFinalNov+valorFinalDez;
+			
 			return response.send(
 				{
-					"janeiro": valorFinalJan,
-					"fevereiro": valorFinalFev,
-					"marco": valorFinalMar,
-					"abril": valorFinalAbr,
-					"maio": valorFinalMai,
-					"junho": valorFinalJun,
-					"julho": valorFinalJul,
-					"agosto": valorFinalAgo,
-					"setembro": valorFinalSet,
-					"outubro": valorFinalOut,
-					"novembro": valorFinalNov,
-					"dezembro": valorFinalDez
+					"janeiro": formatarMoeda(valorFinalJan),
+					"fevereiro": formatarMoeda(valorFinalFev),
+					"marco": formatarMoeda(valorFinalMar),
+					"abril": formatarMoeda(valorFinalAbr),
+					"maio": formatarMoeda(valorFinalMai),
+					"junho": formatarMoeda(valorFinalJun),
+					"julho": formatarMoeda(valorFinalJul),
+					"agosto": formatarMoeda(valorFinalAgo),
+					"setembro": formatarMoeda(valorFinalSet),
+					"outubro": formatarMoeda(valorFinalOut),
+					"novembro": formatarMoeda(valorFinalNov),
+					"dezembro": formatarMoeda(valorFinalDez),
+					"totalAno": formatarMoeda(valorTotalAno)
 				}
 				);
 		} catch (error) {
