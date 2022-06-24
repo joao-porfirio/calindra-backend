@@ -72,8 +72,6 @@ app.get('/deputados/:id/gastosDetalhados/:ano', (request, response) => {
 						{
 							valor: json.dados[i].valorDocumento, 
 							tipoDespesa: json.dados[i].tipoDespesa,
-							ano: json.dados[i].ano,
-							mes: json.dados[i].mes,
 						}
 					);
 				}
