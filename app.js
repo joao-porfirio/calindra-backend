@@ -60,6 +60,9 @@ app.get('/deputados/:id', (request, response) => {
 });
 
 app.get('/deputados/:id/gastosDetalhados/:ano', (request, response) => {
+	function formatarMoeda(valor){
+		return valor.toLocaleString('pt-br', {minimumFractionDigits: 2})
+	}
 	(async () => {
 		try {
 			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}/despesas?pagina=1&itens=2000`)
@@ -70,7 +73,7 @@ app.get('/deputados/:id/gastosDetalhados/:ano', (request, response) => {
 				if(json.dados[i].ano == `${request.params.ano}`){
 					jsonFinal.push(
 						{
-							valor: json.dados[i].valorDocumento, 
+							valor: formatarMoeda(json.dados[i].valorDocumento), 
 							tipoDespesa: json.dados[i].tipoDespesa,
 						}
 					);
@@ -195,21 +198,21 @@ app.get('/deputados/:id/gastosPorMes/:ano', (request, response) => {
 
 			return response.send(
 				{
-					"janeiro": valorFinalJan,
-					"fevereiro": valorFinalFev,
-					"marco":valorFinalMar,
-					"abril":valorFinalAbr,
-					"maio": valorFinalMai,
-					"junho": valorFinalJun,
-					"julho": valorFinalJul,
-					"agosto":valorFinalAgo,
-					"setembro": valorFinalSet,
-					"outubro": valorFinalOut,
-					"novembro": valorFinalNov,
-					"dezembro": valorFinalDez,
+					"janeiro": Math.round(valorFinalJan),
+					"fevereiro": Math.round(valorFinalFev),
+					"marco": Math.round(valorFinalMar),
+					"abril": Math.round(valorFinalAbr),
+					"maio": Math.round(valorFinalMai),
+					"junho": Math.round(valorFinalJun),
+					"julho": Math.round(valorFinalJul),
+					"agosto": Math.round(valorFinalAgo),
+					"setembro": Math.round(valorFinalSet),
+					"outubro": Math.round(valorFinalOut),
+					"novembro": Math.round(valorFinalNov),
+					"dezembro": Math.round(valorFinalDez),
 					"totalAno": formatarMoeda(valorTotalAno)
 				}
-				);
+			);
 		} catch (error) {
 			console.log(error);
 		}
