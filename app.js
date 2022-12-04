@@ -6,284 +6,148 @@ const cors = require('cors');
 const PORT = process.env.PORT || 8877;
 app.use(cors());
 
-app.get('/', (request, response) => {
-	return response.send(
-		"<body>" +
-		"<h1>" + "Rotas disponíveis para consulta:" + "</h1>" +
-		"<section style='text-indent: 25px'>"+
-		"<h2>" + "Deputados" + "</h2>" +
-		"<ul>" +
-		"<li>" + "/deputados" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/gastosDetalhados/ano" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/gastosPorMes/ano" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/discursos" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/eventos" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/frentes" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/ocupacoes" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/orgaos" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/profissoes" + "</li>" + "<br>" +
-		"<li>" + "/deputados/idDeputado/mesa" +
-		"</ul>" +
-		"<hr>" +
-		"<h2>" + "Partidos Políticos" + "</h2>" +
-		"<ul>" +
-		"<li>" + "/partidos/" + "</li>" + "<br>" +
-		"<li>" + "/partidoEspecifico/idPartido/" + "</li>" + "<br>" +
-		"<li>" + "/partidoEspecifico/idPartido/politicos/" + "</li>" + "<br>" +
-		"</ul>" +
-		"</section>"+
-		"</body>"
-	);
-})
+const trataEndereco = (endereco) => {
+	const parsed = endereco.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+	return parsed;
+}
+const getMinutes = (seconds) => {
+	const minutes = Math.floor(Number(seconds) / 60);
+	return minutes +" min";
+}
+const formatDistance = (distance) => {
+	distance = (distance / 1000);
+	return distance.toFixed(1) + " km";
+}
+const getMaiorDistancia = (values) => {
+	const maxValue = values.reduce(function(prev, current) {
+		return Number((prev.distanciaMetros) > Number(current.distanciaMetros)) ? prev : current
+	})
+	const obj = {
+		distancia: formatDistance(maxValue.distancia),
+		distanciaMetros: Number(maxValue.distanciaMetros),
+		partida: Number(maxValue.partida),
+		destino: Number(maxValue.destino),
+		tempo: maxValue.tempo
+	};
+	return obj;
+}
+const getMenorDistancia = (values) => {
+	const minValue = values.reduce(function(prev, current) {
+		return (Number(prev.distanciaMetros) < Number(current.distanciaMetros)) ? prev : current
+	})
+	const obj = {
+		distancia: formatDistance(minValue.distancia),
+		distanciaMetros: Number(minValue.distanciaMetros),
+		partida: Number(minValue.partida),
+		destino: Number(minValue.destino),
+		tempo: minValue.tempo
+	};
+	return obj;
+}
 
-app.get('/deputados', (request, response) => {
+app.get('/getEnderecos/*', (request, response) => {
 	(async () => {
-		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados`)
-			return response.send(resposta.data);
-		} catch (error) {
-			console.log(error);
-		}
-	})();
-});
+		try {	
+			const enderecos = request.params['0'] ? request.params['0'].split('/') : [];
+			if(enderecos <= 1) return response.send({erro: "Estão faltando endereços como parâmetro"});
+			const latLon = []
 
-app.get('/deputados/:id', (request, response) => {
-	(async () => {
-		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}`)
-			return response.send(resposta.data);
-		} catch (error) {
-			console.log(error);
-		}
-	})();
-});
-
-app.get('/deputados/:id/gastosDetalhados/:ano', (request, response) => {
-	function formatarMoeda(valor){
-		return valor.toLocaleString('pt-br', {minimumFractionDigits: 2})
-	}
-	(async () => {
-		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}/despesas?pagina=1&itens=2000`)
-			const json = resposta.data;
-			const jsonFinal = [];
-
-			for(let i=0; i<json.dados.length; i++){
-				if(json.dados[i].ano == `${request.params.ano}`){
-					jsonFinal.push(
-						{
-							valor: formatarMoeda(json.dados[i].valorDocumento), 
-							tipoDespesa: json.dados[i].tipoDespesa,
-						}
-					);
-				}
+			const jsonRetorno = {
+				enderecos: [],
+				distancias: [],
+				enderecosMaisProximos: [],
+				enderecosMaisDistantes: [],
+			};
+			for(let i = 0 ; i < enderecos.length; i++){
+				let resposta = await axios.get(`https://api.geoapify.com/v1/geocode/search?text=${trataEndereco(enderecos[i])}&apiKey=6a737a28a83443b3a58509459b56673f`)
+				latLon.push(
+					{
+						lon: resposta.data.features[0].geometry.coordinates[0],
+						lat: resposta.data.features[0].geometry.coordinates[1],
+						endereco: resposta.data.query.text
+					}
+				);
+				jsonRetorno.enderecos.push(
+					{
+						endereco: resposta.data.query.text,
+						latitude: resposta.data.features[0].geometry.coordinates[1],
+						longitude: resposta.data.features[0].geometry.coordinates[0],
+						indice: i
+					}
+				)
 			}
-			return response.send(jsonFinal);
-		} catch (error) {
-			console.log(error);
-		}
-	})();
-});
 
-app.get('/deputados/:id/gastosPorMes/:ano', (request, response) => {
-	function formatarMoeda(valor){
-		return valor.toLocaleString('pt-br', {minimumFractionDigits: 2})
-	}
-	  
-	(async () => {
-		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}/despesas?pagina=1&itens=2000`)
-			const json = resposta.data;
+			let json = {"mode": "drive", "targets": [], "sources": []};
+			for(let j = 0 ; j < latLon.length; j++){
+				json['targets'].push({location: [latLon[j].lon, latLon[j].lat]})
+				json['sources'].push({location: [latLon[j].lon, latLon[j].lat]})
+			}
+			const respostaDistancias = await axios.post('https://api.geoapify.com/v1/routematrix?apiKey=6a737a28a83443b3a58509459b56673f', json)
+			const jsonDistancias = respostaDistancias.data;
 
-			const valoresJaneiro = []; let valorFinalJan = 0;
-			const valoresFevereiro = []; let valorFinalFev= 0;
-			const valoresMarco = []; let valorFinalMar= 0;
-			const valoresAbril = []; let valorFinalAbr= 0; 
-			const valoresMaio = []; let valorFinalMai= 0; 
-			const valoresJunho = []; let valorFinalJun= 0; 
-			const valoresJulho = []; let valorFinalJul= 0;
-			const valoresAgosto = []; let valorFinalAgo= 0;
-			const valoresSetembro = []; let valorFinalSet= 0;
-			const valoresOutubro = []; let valorFinalOut= 0;
-			const valoresNovembro = []; let valorFinalNov= 0;
-			const valoresDezembro = []; let valorFinalDez= 0;
-			
-			for(let i=0; i<json.dados.length; i++){
-				if(json.dados[i].ano == `${request.params.ano}`){
-					switch (json.dados[i].mes) {
-						case 1:
-							valoresJaneiro.push(json.dados[i].valorDocumento)
-						break;
-						case 2:
-							valoresFevereiro.push(json.dados[i].valorDocumento)
-						break;
-						case 3:
-							valoresMarco.push(json.dados[i].valorDocumento)
-						break;
-						case 4:
-							valoresAbril.push(json.dados[i].valorDocumento)
-						break;
-						case 5:
-							valoresMaio.push(json.dados[i].valorDocumento)
-						break;
-						case 6:
-							valoresJunho.push(json.dados[i].valorDocumento)
-						break;
-						case 7:
-							valoresJulho.push(json.dados[i].valorDocumento)
-						break;
-						case 8:
-							valoresAgosto.push(json.dados[i].valorDocumento)
-						break;
-						case 9:
-							valoresSetembro.push(json.dados[i].valorDocumento)
-						break;
-						case 10:
-							valoresOutubro.push(json.dados[i].valorDocumento)
-						break;
-						case 11:
-							valoresNovembro.push(json.dados[i].valorDocumento)
-						break;
-						case 12:
-							valoresDezembro.push(json.dados[i].valorDocumento)
-						break;
+			let maiorDistancia = [];
+			let menorDistancia = [];
+
+			for(let z = 0; z < jsonDistancias.sources_to_targets.length; z++){
+				for(let k = 0; k < jsonDistancias.sources_to_targets[z].length; k++){
+					if(z !== k){
+						jsonRetorno.distancias.push(
+							{
+								distancia: formatDistance(jsonDistancias.sources_to_targets[z][k].distance),
+								distanciaMetros: jsonDistancias.sources_to_targets[z][k].distance,
+								tempo: getMinutes(jsonDistancias.sources_to_targets[z][k].time),
+								partida: enderecos[jsonDistancias.sources_to_targets[z][k].source_index],
+								destino: enderecos[jsonDistancias.sources_to_targets[z][k].target_index],
+								indicePartida: jsonDistancias.sources_to_targets[z][k].source_index,
+								indiceDestino: jsonDistancias.sources_to_targets[z][k].target_index
+							}
+						)
+						maiorDistancia.push(
+							{
+								distancia: `${jsonDistancias.sources_to_targets[z][k].distance}`,
+								distanciaMetros: `${Number(jsonDistancias.sources_to_targets[z][k].distance)}`,
+								tempo: getMinutes(jsonDistancias.sources_to_targets[z][k].time),
+								partida: `${jsonDistancias.sources_to_targets[z][k].source_index}`,
+								destino: `${jsonDistancias.sources_to_targets[z][k].target_index}`
+							}
+						);
+						menorDistancia.push(
+							{
+								distancia: `${jsonDistancias.sources_to_targets[z][k].distance}`,
+								distanciaMetros: `${Number(jsonDistancias.sources_to_targets[z][k].distance)}`,
+								tempo: getMinutes(jsonDistancias.sources_to_targets[z][k].time),
+								partida: `${jsonDistancias.sources_to_targets[z][k].source_index}`,
+								destino: `${jsonDistancias.sources_to_targets[z][k].target_index}`
+							}
+						);
 					}
 				}
 			}
-			
-			for (var x=0; x < valoresJaneiro.length; x++) {
-				valorFinalJan += parseFloat(valoresJaneiro[x]);
-			}
-			for (var x=0; x < valoresFevereiro.length; x++) {
-				valorFinalFev += parseFloat(valoresFevereiro[x]);
-			}
-			for (var x=0; x < valoresMarco.length; x++) {
-				valorFinalMar += parseFloat(valoresMarco[x]);
-			}
-			for (var x=0; x < valoresAbril.length; x++) {
-				valorFinalAbr += parseFloat(valoresAbril[x]);
-			}
-			for (var x=0; x < valoresMaio.length; x++) {
-				valorFinalMai += parseFloat(valoresMaio[x]);
-			}
-			for (var x=0; x < valoresJunho.length; x++) {
-				valorFinalJun += parseFloat(valoresJunho[x]);
-			}
-			for (var x=0; x < valoresJulho.length; x++) {
-				valorFinalJul += parseFloat(valoresJulho[x]);
-			}
-			for (var x=0; x < valoresAgosto.length; x++) {
-				valorFinalAgo += parseFloat(valoresAgosto[x]);
-			}
-			for (var x=0; x < valoresSetembro.length; x++) {
-				valorFinalSet += parseFloat(valoresSetembro[x]);
-			}
-			for (var x=0; x < valoresOutubro.length; x++) {
-				valorFinalOut += parseFloat(valoresOutubro[x]);
-			}
-			for (var x=0; x < valoresNovembro.length; x++) {
-				valorFinalNov += parseFloat(valoresNovembro[x]);
-			}
-			for (var x=0; x < valoresDezembro.length; x++) {
-				valorFinalDez += parseFloat(valoresDezembro[x]);
-			}
-
-			let valorTotalAno = valorFinalJan+valorFinalFev+
-			valorFinalMar+valorFinalAbr+
-			valorFinalMai+valorFinalJun+
-			valorFinalJul+valorFinalAgo+
-			valorFinalSet+valorFinalOut+
-			valorFinalNov+valorFinalDez;
-
-			return response.send(
+			jsonRetorno.enderecosMaisProximos.push(
 				{
-					"janeiro": Math.round(valorFinalJan),
-					"fevereiro": Math.round(valorFinalFev),
-					"marco": Math.round(valorFinalMar),
-					"abril": Math.round(valorFinalAbr),
-					"maio": Math.round(valorFinalMai),
-					"junho": Math.round(valorFinalJun),
-					"julho": Math.round(valorFinalJul),
-					"agosto": Math.round(valorFinalAgo),
-					"setembro": Math.round(valorFinalSet),
-					"outubro": Math.round(valorFinalOut),
-					"novembro": Math.round(valorFinalNov),
-					"dezembro": Math.round(valorFinalDez),
-					"totalAno": formatarMoeda(valorTotalAno)
+					partida: `${enderecos[getMenorDistancia(menorDistancia).partida]}`,
+					destino: `${enderecos[getMenorDistancia(menorDistancia).destino]}`,
+					distancia: `${getMenorDistancia(menorDistancia).distancia}`
 				}
-			);
+			)
+			jsonRetorno.enderecosMaisDistantes.push(
+				{
+					partida: `${enderecos[getMaiorDistancia(maiorDistancia).partida]}`,
+					destino: `${enderecos[getMaiorDistancia(maiorDistancia).destino]}`,
+					distancia: `${getMaiorDistancia(maiorDistancia).distancia}`
+				}
+			)
+			
+			return response.send(jsonRetorno);
 		} catch (error) {
-			console.log(error);
+			return response.send({error: error.toString()});
 		}
 	})();
 });
-
-app.get('/deputados/:id/profissoes', (request, response) => {
-	(async () => {
-		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/deputados/${request.params.id}/profissoes`)
-			return response.send(resposta.data);
-		} catch (error) {
-			console.log(error);
-		}
-	})();
-});
-
-app.get('/votacoes', (request, response) => {
-	(async () => {
-		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/votacoes`)
-			return response.send(resposta.data);
-		} catch (error) {
-			console.log(error);
-		}
-	})();
-});
-
-app.get('/partidos', (request, response) => {
-	(async () => {
-		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/partidos?itens=100`)
-			return response.send(resposta.data);
-		} catch (error) {
-			console.log(error);
-		}
-	})();
-});
-
-app.get('/partidoEspecifico/:id', (request, response) => {
-	(async () => {
-		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/partidos/${request.params.id}`)
-			return response.send(resposta.data);
-		} catch (error) {
-			console.log(error);
-		}
-	})();
-});
-
-app.get('/partidoEspecifico/:id/politicos', (request, response) => {
-	(async () => {
-		try {
-			const resposta = await axios.get(`https://dadosabertos.camara.leg.br/api/v2/partidos/${request.params.id}/membros`)
-			return response.send(resposta.data);
-		} catch (error) {
-			console.log(error);
-		}
-	})();
-});
-
-app.get('/queimadas', (request, response) => {
-	(async () => {
-		try {
-			const resposta = await axios.get(`https://queimadas.dgi.inpe.br/home/download?id=focos_brasil&time=48h&outputFormat=json&utm_source=landing-page&utm_medium=landing-page&utm_campaign=dados-abertos&utm_content=focos_brasil_48h`)
-			return response.send(resposta.data);
-		} catch (error) {
-			console.log(error);
-		}
-	})();
-});
+app.get('*', (request, response) => {
+	return response.send({erro: "Rota não encontrada"}
+	);
+})
 
 app.listen(PORT, () => {
 })
